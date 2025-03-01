@@ -1,0 +1,6 @@
+# Ignore all .tsv files
+*.tsv
+
+# But keep sample files
+!sample_edges.tsv
+!sample_nodes.tsv
