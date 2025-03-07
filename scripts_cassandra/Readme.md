@@ -1,5 +1,5 @@
 # Environment Setup Guide
-
+<pre>
 Prerequisites
     – Install Java 8 or Java 11
 Download Cassandra
@@ -11,6 +11,7 @@ Getting started
 
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
+<\pre>
 
 # Detail steps for setup (Based on MacOS)
 <pre>
@@ -70,3 +71,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 <\pre>
 
 # Run python script
+<pre>
+
+<\pre>
