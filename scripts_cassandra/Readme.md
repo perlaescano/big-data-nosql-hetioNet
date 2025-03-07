@@ -1,18 +1,19 @@
-# Environment Setup Guide (Based on Macos)
+# Environment Setup Guide
 
-## Prerequisites
+Prerequisites
     – Install Java 8 or Java 11
-## Download Cassandra
+Download Cassandra
     – https://cassandra.apache.org/_/download.html
-## Configuration
+Configuration
     – In conf/cassandra.yaml
-## Getting started
+Getting started
     – http://cassandra.apache.org/doc/latest/getting_started/index.html
 
-## Python Driver (DataStax Cassandra Driver)
+Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
 
-## Detail steps for setup
+# Detail steps for setup (Based on MacOS)
+<pre>
 1. Download, extract and move Cassandra
 Download the latest stable release: apache-cassandra-4.1.8-bin.tar
 Extract: tar -xvzf apache-cassandra-4.1.8-bin.tar
@@ -66,5 +67,6 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> print(cassandra.__version__)
 3.29.2
 >>> 
+<\pre>
 
 # Run python script
