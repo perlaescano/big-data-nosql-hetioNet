@@ -202,10 +202,17 @@ def load_disease_relations(filename=EDGE_DATA_FILE):
                 if metaedge == "DuG":  # Disease-upregulated-Gene
                     disease_data[source]["genes"].add(target)
                     #print("Taly 3")
+                elif metaedge == "DdG":  # Disease-upregulated-Gene
+                    disease_data[source]["genes"].add(target)
+                    #print("Taly 3")
+                elif metaedge == "DaG":  # Disease-upregulated-Gene
+                    disease_data[source]["genes"].add(target)
+                    #print("Taly 3")
                 elif metaedge == "DlA":  # Disease-localized-in-Anatomy
                     disease_data[source]["locations"].add(target)
                     #print("Taly 4")    
         
+    # Disease::DOID:263
     return disease_data
 
 # Query 2
@@ -299,46 +306,43 @@ def load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compoun
 ################################################################################################
 def query_disease_info(session, disease_id):
     """Query disease information."""
-    #print(f"\n[Query] Disease info for {disease_id}")
     rows = session.execute("SELECT * FROM disease_info WHERE disease_id = %s", [disease_id])
-    output_text = ""
-    for row in rows:
-        """
-        print(f"Disease Name: {row.disease_name}")
-        print(f"Drugs: {row.drug_names}")
-        print(f"Genes: {row.gene_names}")
-        print(f"Locations: {row.location_names}")
-        """
-        output_text += f"Disease Name: {row.disease_name}\n"
-        output_text += f"Drugs: {row.drug_names}\n"
-        output_text += f"Genes: {row.gene_names}\n"
-        output_text += f"Locations: {row.location_names}\n"
 
-    return output_text
+    # Disease::DOID:263
+    # Disease::DOID:0050742
+    output_lines = []
+    for row in rows:
+        output_lines.append(f"Disease Name: {row.disease_name}")
+
+        # Use join() for cleaner concatenation
+        output_lines.append(f"Drugs for Treatment/Palliation: {', '.join(row.drug_names)}")
+        output_lines.append(f"Genes that Cause the Disease: {', '.join(row.gene_names)}")
+        output_lines.append(f"Anatomy Locations: {', '.join(row.location_names)}")
+
+    return '\n'.join(output_lines)
 
 def query_all_disease_info(session):
     """Query all disease information."""
     #print(f"\n[Query] Disease id and name")
     rows = session.execute("SELECT * FROM disease_info")
-    output_text = ""
+    output_lines = ""
     for row in rows:
         """
         print(f"{row.disease_id}, Disease Name: {row.disease_name}, Drugs: {row.drug_names}")
         """
-        output_text += f"{row.disease_id}, Disease Name: {row.disease_name}, Drugs: {row.drug_names}\n"
+        output_lines += f"{row.disease_id}, Disease Name: {row.disease_name}, Drugs: {row.drug_names}\n"
     return rows
 
 def query_all_new_compounds_info(session):
     #print(f"\n[Query] New Compounds id and name")
     rows = session.execute("SELECT * FROM compound_info")
-    output_text = ""
-    for row in rows:
-        """
-        print(f"{row.compound_id}, Compound Name: {row.compound_name}")
-        """
-        output_text += f"{row.compound_id}, Compound Name: {row.compound_name}\n"
+    #rows = session.execute("SELECT * FROM compound_info ORDER BY compound_id ASC")
+    sorted_rows = sorted(rows, key=lambda row: row.compound_id)
+    output_lines = ""
+    for row in sorted_rows:
+        output_lines += f"{row.compound_id}, Compound Name: {row.compound_name}\n"
 
-    return output_text
+    return output_lines
 
 ################################################################################################
 # Connection with GUI
@@ -421,7 +425,7 @@ class InitPage(tk.Frame):
         center_frame.pack(expand=True)
 
         text_query1 = ("Query 1\n"
-            "   iven a disease id, what is its name,\n"
+            "   Given a disease id, what is its name,\n"
             "   what are drug names that can treat or palliate this disease,\n"
             "   what are gene names that cause this disease, and\n"
             "   where this disease occurs?\n"
