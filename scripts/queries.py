@@ -4,7 +4,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from scripts.db_connection import Neo4jConnection
 
-# DB Answers Part 1
+# Query 1: Get Disease Information
 def get_disease_info(disease_id):
     """
     Given a disease ID, retrieve:
@@ -39,11 +39,50 @@ def get_disease_info(disease_id):
     else:
         print("No data found for the given disease ID.")
 
+# Query 2: Find New Drug Candidate
+def find_new_drugs():
+    """
+    Identifies compounds that can treat diseases based on gene regulation patterns:
+    - The compound up-regulates (`CuG`) or down-regulates (`CdG`) a gene.
+    - The location of the disease (Anatomy) down-regulates (`AdG`) or up-regulates (`AuG`) the same gene in the opposite direction.
+    - The compound is NOT already linked to any disease (`CtD`).
+    """
+    query = """
+    MATCH (a:Anatomy)-[:AdG|AuG]->(g:Gene)  // Anatomy up/down-regulates gene
+    MATCH (c:Compound)-[:CuG|CdG]->(g)  // Compound up/down-regulates the same gene
+    WHERE NOT EXISTS {
+        MATCH (c)-[:CtD]->(:Disease)  // Ensure the compound is NOT already linked to any disease
+    }
+    RETURN DISTINCT c.name AS Potential_Drug
+    """
+    
+    conn = Neo4jConnection()
+    result = conn.query(query)
+    conn.close()
+
+    # Process and display results 
+    if result:
+        drugs = [record["Potential_Drug"] for record in result]
+        print(f"\nPotential New Drugs: {', '.join(drugs) if drugs else 'None Found'}\n")
+    else:
+        print("No new drug candidates found.")
+
 # Allow terminal-based queries
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/queries.py <Disease_ID>")
+    if len(sys.argv) < 2:
+        print("Usage: python scripts/queries.py <query_number> [Disease_ID]")
+        print("Example for disease info: python scripts/queries.py 1 Disease::DOID:1686")
+        print("Example for new drug candidates: python scripts/queries.py 2")
         sys.exit(1)
     
-    disease_id = sys.argv[1]
-    get_disease_info(disease_id)
+    query_number = sys.argv[1]
+    if query_number == "1":
+        if len(sys.argv) != 3:
+            print("For Query 1, please provide a disease ID.")
+            sys.exit(1)
+        disease_id = sys.argv[2]
+        get_disease_info(disease_id)
+    elif query_number == "2":
+        find_new_drugs()
+    else:
+        print("Invalid query number. Use 1 for disease info, 2 for new drug candidates.")
