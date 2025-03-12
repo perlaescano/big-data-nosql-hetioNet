@@ -19,8 +19,9 @@ def get_disease_info(disease_id):
     OPTIONAL MATCH (d)-[:DaG|DdG|DuG]->(g:Gene)  // Genes associated with the disease
     OPTIONAL MATCH (d)-[:DlA]->(a:Anatomy)       // Where the disease occurs (anatomy)
     RETURN 
+        d.id AS Disease_ID,
         d.name AS Disease_Name, 
-        COLLECT(DISTINCT c.name) AS Drugs, 
+        COLLECT(DISTINCT c) AS Drugs, 
         COLLECT(DISTINCT g.name) AS Genes, 
         COLLECT(DISTINCT a.name) AS Locations
     """
@@ -29,20 +30,34 @@ def get_disease_info(disease_id):
     result = conn.query(query, {"disease_id": disease_id})
     conn.close()
 
-    # Extract data from query result
+    # Process results
     if result:
         data = result[0]
-        print(f"\nDisease Name: {data['Disease_Name']}")
-        print(f"Drugs that treat/palliate: {', '.join(data['Drugs']) if data['Drugs'] else 'None'}")
-        print(f"Associated Genes: {', '.join(data['Genes']) if data['Genes'] else 'None'}")
-        print(f"Occurs in: {', '.join(data['Locations']) if data['Locations'] else 'Unknown'}\n")
+        print(f"\n{data['Disease_ID']}")
+        print(f"Disease Name: {data['Disease_Name']}")
+        
+        # Format drugs list
+        if data['Drugs']:
+            sorted_drugs = sorted(data['Drugs'], key=lambda x: x['id'])  # Sort alphabetically by ID
+            drug_output = f"{', '.join([d['name'] for d in sorted_drugs])}"
+        else:
+            drug_output = "None"
+        print(f"Drugs for Treatment/Palliation: {drug_output}")
+
+        # Format genes
+        sorted_genes = sorted(data['Genes']) if data['Genes'] else []
+        print(f"Genes that Cause the Disease: {', '.join(sorted_genes) if sorted_genes else 'None'}")
+
+        # Format locations
+        sorted_locations = sorted(data['Locations']) if data['Locations'] else []
+        print(f"Anatomy Locations: {', '.join(sorted_locations) if sorted_locations else 'Unknown'}\n")
     else:
         print("No data found for the given disease ID.")
 
 # Query 2: Find New Drug Candidate
 def find_new_drugs():
     """
-    Identifies compounds that can treat diseases based on gene regulation patterns:
+    Identifies new drug candidates that can treat diseases but are NOT currently linked to any disease.
     - The compound up-regulates (`CuG`) or down-regulates (`CdG`) a gene.
     - The location of the disease (Anatomy) down-regulates (`AdG`) or up-regulates (`AuG`) the same gene in the opposite direction.
     - The compound is NOT already linked to any disease (`CtD`).
@@ -53,7 +68,8 @@ def find_new_drugs():
     WHERE NOT EXISTS {
         MATCH (c)-[:CtD]->(:Disease)  // Ensure the compound is NOT already linked to any disease
     }
-    RETURN DISTINCT c.name AS Potential_Drug
+    RETURN DISTINCT c.id AS Compound_ID, c.name AS Compound_Name
+    ORDER BY c.id
     """
     
     conn = Neo4jConnection()
@@ -62,8 +78,9 @@ def find_new_drugs():
 
     # Process and display results 
     if result:
-        drugs = [record["Potential_Drug"] for record in result]
-        print(f"\nPotential New Drugs: {', '.join(drugs) if drugs else 'None Found'}\n")
+        print("\nPotential New Drugs:")
+        for record in result:
+            print(f"{record['Compound_ID']}, Compound Name: {record['Compound_Name']}")
     else:
         print("No new drug candidates found.")
 
