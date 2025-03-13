@@ -4,6 +4,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from scripts.db_connection import Neo4jConnection
 
+def save_results_to_file(filename, content):
+    """
+    Saves query results to a file in the 'test_results' folder.
+    """
+    folder_path = "test_results"
+    os.makedirs(folder_path, exist_ok=True)  
+    file_path = os.path.join(folder_path, filename)
+
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+
+    print(f"Results saved to {file_path}")
+
+
 # Query 1: Get Disease Information
 def get_disease_info(disease_id):
     """
@@ -21,7 +35,7 @@ def get_disease_info(disease_id):
     RETURN 
         d.id AS Disease_ID,
         d.name AS Disease_Name, 
-        COLLECT(DISTINCT c) AS Drugs, 
+        COLLECT(DISTINCT c.name) AS Drugs, 
         COLLECT(DISTINCT g.name) AS Genes, 
         COLLECT(DISTINCT a.name) AS Locations
     """
@@ -30,37 +44,27 @@ def get_disease_info(disease_id):
     result = conn.query(query, {"disease_id": disease_id})
     conn.close()
 
-    # Process results
-    if result:
-        data = result[0]
-        print(f"\n{data['Disease_ID']}")
-        print(f"Disease Name: {data['Disease_Name']}")
-        
-        # Format drugs list
-        if data['Drugs']:
-            sorted_drugs = sorted(data['Drugs'], key=lambda x: x['id'])  # Sort alphabetically by ID
-            drug_output = f"{', '.join([d['name'] for d in sorted_drugs])}"
-        else:
-            drug_output = "None"
-        print(f"Drugs for Treatment/Palliation: {drug_output}")
+    if not result:
+        return f"No data found for disease: {disease_id}"
 
-        # Format genes
-        sorted_genes = sorted(data['Genes']) if data['Genes'] else []
-        print(f"Genes that Cause the Disease: {', '.join(sorted_genes) if sorted_genes else 'None'}")
+    data = result[0]
 
-        # Format locations
-        sorted_locations = sorted(data['Locations']) if data['Locations'] else []
-        print(f"Anatomy Locations: {', '.join(sorted_locations) if sorted_locations else 'Unknown'}\n")
-    else:
-        print("No data found for the given disease ID.")
+    # Formatting results into a readable string
+    output_text = f"\nDisease ID: {data['Disease_ID']}\n"
+    output_text += f"Disease Name: {data['Disease_Name']}\n"
+    output_text += f"Drugs for Treatment/Palliation: {', '.join(data['Drugs']) if data['Drugs'] else 'None'}\n"
+    output_text += f"Genes that Cause the Disease: {', '.join(data['Genes']) if data['Genes'] else 'None'}\n"
+    output_text += f"Anatomy Locations: {', '.join(data['Locations']) if data['Locations'] else 'Unknown'}\n"
+
+    # Save results to file
+    save_results_to_file("neo4j_query1.txt", output_text)
+
+    return output_text  # Return formatted text to GUI
 
 # Query 2: Find New Drug Candidate
 def find_new_drugs():
     """
     Identifies new drug candidates that can treat diseases but are NOT currently linked to any disease.
-    - The compound up-regulates (`CuG`) or down-regulates (`CdG`) a gene.
-    - The location of the disease (Anatomy) down-regulates (`AdG`) or up-regulates (`AuG`) the same gene in the opposite direction.
-    - The compound is NOT already linked to any disease (`CtD`).
     """
     query = """
     MATCH (a:Anatomy)-[:AdG|AuG]->(g:Gene)  // Anatomy up/down-regulates gene
@@ -76,13 +80,17 @@ def find_new_drugs():
     result = conn.query(query)
     conn.close()
 
-    # Process and display results 
-    if result:
-        print("\nPotential New Drugs:")
-        for record in result:
-            print(f"{record['Compound_ID']}, Compound Name: {record['Compound_Name']}")
-    else:
-        print("No new drug candidates found.")
+    if not result:
+        return "No new drug candidates found."
+
+    # Formatting results into a readable string
+    output_text = "Potential New Drugs:\n"
+    output_text += "\n".join([f"{record['Compound_ID']}, Compound Name: {record['Compound_Name']}" for record in result])
+
+    # Save results to file
+    save_results_to_file("neo4j_query2.txt", output_text)
+
+    return output_text  # Return formatted text to GUI
 
 # Allow terminal-based queries
 if __name__ == "__main__":
