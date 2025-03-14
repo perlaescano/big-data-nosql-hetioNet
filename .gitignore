@@ -7,3 +7,6 @@
 
 # Ignore environment variables
 .env
+
+# Mac environment files
+.DS_Store
