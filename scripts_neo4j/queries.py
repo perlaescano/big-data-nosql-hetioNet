@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from scripts.db_connection import Neo4jConnection
+from scripts_neo4j.db_connection import Neo4jConnection
 
 def save_results_to_file(filename, content):
     """

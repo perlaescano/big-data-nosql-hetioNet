@@ -6,7 +6,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import tkinter as tk
 from tkinter import ttk, scrolledtext
-from scripts.queries import get_disease_info, find_new_drugs
+from scripts_neo4j.queries import get_disease_info, find_new_drugs
 
 class App(tk.Tk):
     """

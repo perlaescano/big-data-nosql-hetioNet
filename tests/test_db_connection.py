@@ -3,7 +3,7 @@ import os
 # Ensure scripts/ is in the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from scripts.db_connection import Neo4jConnection
+from scripts_neo4j.db_connection import Neo4jConnection
 
 def test_create_and_query():
     """
