@@ -11,7 +11,7 @@ Getting started
 
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
-<\pre>
+</pre>
 
 # Detail steps for setup (Based on MacOS)
 <pre>
@@ -68,9 +68,81 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> print(cassandra.__version__)
 3.29.2
 >>> 
-<\pre>
+</pre>
 
-# Run python script
+# Cassandra database for HetioNet
 <pre>
+1. HetioNet
+node data: nodes.tsv
+edge data: edges.tsv
 
-<\pre>
+2. keyspace: hetio_db
+    session.execute("""
+        CREATE KEYSPACE IF NOT EXISTS hetio_db 
+        WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'};
+    """)
+
+3. tables: 
+disease_info
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS disease_info (
+            disease_id TEXT PRIMARY KEY,
+            disease_name TEXT,
+            drug_names SET<TEXT>,
+            gene_names SET<TEXT>,
+            location_names SET<TEXT>
+        );
+    """)
+
+    session.execute("""
+            INSERT INTO disease_info (disease_id, disease_name, drug_names, gene_names, location_names) 
+            VALUES (%s, %s, %s, %s, %s);
+        """, (disease_id, disease_name, drugs, genes, locations))
+
+compound_info
+    session.execute("""
+        CREATE TABLE IF NOT EXISTS compound_info (
+            compound_id TEXT PRIMARY KEY,
+            compound_name TEXT,
+            is_connected_with_disease BOOLEAN
+        );
+    """) 
+
+    session.execute("""
+            INSERT INTO compound_info (compound_id, compound_name, is_connected_with_disease) 
+            VALUES (%s, %s, %s);
+        """, (compound_id, drugs_names[compound_id], False))
+    session.execute("""
+            INSERT INTO compound_info (compound_id, compound_name, is_connected_with_disease) 
+            VALUES (%s, %s, %s);
+        """, (compound_id, drugs_names[compound_id], True))
+
+</pre>
+
+# Queries for Cassandra
+<pre>
+Query 1:
+    Given a disease id, what is its name,
+    what are drug names that can treat or palliate this disease,
+    what are gene names that cause this disease, and
+    where this disease occurs?
+    Obtain and output this information in a single query.
+
+    session.execute("SELECT * FROM disease_info WHERE disease_id = %s", [disease_id])
+
+Query 2:
+    We assume that a compound can treat a disease
+    if the compound up-regulates/down-regulates a gene, 
+    but the location down-regulates/up-regulates the gene 
+    in an opposite direction where the disease occurs. 
+    Find all compounds that can treat a new disease 
+    (i.e. the missing edges between compound and disease excluding existing drugs). 
+    Obtain and output all drugs in a single query.
+
+    session.execute("SELECT compound_id, compound_name FROM compound_info WHERE is_connected_with_disease = %s ALLOW FILTERING", [False])
+
+</pre>
+
+# Run python script (python 3.9, tkinter 8.6)
+study_cassandra % python hetio_cassandra.py
+

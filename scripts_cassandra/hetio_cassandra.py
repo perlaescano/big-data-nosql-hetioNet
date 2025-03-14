@@ -107,14 +107,20 @@ def create_compound_table(session):
     """)
     print("[✔] compound_info table created.")
 
-def insert_compounds_info(session, drugs_names, new_drugs_info):
+def insert_compounds_info(session, drugs_names, new_drugs_info, old_drugs_info):
     """Insert collected data into Cassandra"""
     for compound_id in new_drugs_info:
         session.execute("""
             INSERT INTO compound_info (compound_id, compound_name, is_connected_with_disease) 
             VALUES (%s, %s, %s);
+        """, (compound_id, drugs_names[compound_id], False))
+
+    for compound_id in old_drugs_info:
+        session.execute("""
+            INSERT INTO compound_info (compound_id, compound_name, is_connected_with_disease) 
+            VALUES (%s, %s, %s);
         """, (compound_id, drugs_names[compound_id], True))
-    
+
     print("[✔] Compound data inserted successfully!")
 
 ################################################################################################
@@ -183,7 +189,6 @@ def load_disease_relations(filename=EDGE_DATA_FILE):
     """Load edges.tsv to map diseases to drugs, genes, and locations."""
     disease_data = defaultdict(lambda: {"drugs": set(), "genes": set(), "locations": set()})
     
-    #print("Taly: Let make table!")
     with open(filename, "r", encoding="utf-8") as file:
         reader = csv.reader(file, delimiter="\t")
         next(reader)  # Skip header
@@ -193,26 +198,19 @@ def load_disease_relations(filename=EDGE_DATA_FILE):
             if "Disease::" in target:
                 if metaedge == "CtD":  # Compound-treats-Disease
                     disease_data[target]["drugs"].add(source)
-                    #print("Taly 1")
                 elif metaedge == "CpD":  # Compound-Palliate-Disease
                     disease_data[target]["drugs"].add(source)
-                    #print("Taly 2")
 
             if "Disease::" in source:
                 if metaedge == "DuG":  # Disease-upregulated-Gene
                     disease_data[source]["genes"].add(target)
-                    #print("Taly 3")
                 elif metaedge == "DdG":  # Disease-upregulated-Gene
                     disease_data[source]["genes"].add(target)
-                    #print("Taly 3")
                 elif metaedge == "DaG":  # Disease-upregulated-Gene
                     disease_data[source]["genes"].add(target)
-                    #print("Taly 3")
                 elif metaedge == "DlA":  # Disease-localized-in-Anatomy
                     disease_data[source]["locations"].add(target)
-                    #print("Taly 4")    
         
-    # Disease::DOID:263
     return disease_data
 
 # Query 2
@@ -225,7 +223,6 @@ def load_compound_gene_anatomy_relations(filename=EDGE_DATA_FILE):
 
     info_data = set()
 
-    #print("Taly: Let make table!")
     with open(filename, "r", encoding="utf-8") as file:
         reader = csv.reader(file, delimiter="\t")
         next(reader)  # Skip header
@@ -268,14 +265,11 @@ def load_anatomy_desease_compound_relations(filename=EDGE_DATA_FILE):
             if "Anatomy::" in target:
                 if metaedge == "DlA":  
                     disease_data[source]["locations"].add(target)
-                    #print("Taly 1: disease relationship", source, " : ", disease_data[source])
 
             if "Compound::" in source:
                 if metaedge == "CtD" or metaedge == "CpD":  
                     disease_data[target]["drugs"].add(source)
-                    #print("Taly 2: disease relationship", target, " : ", disease_data[target])
         
-    #print("Taly: disease relationship", disease_data)
     return disease_data
 
 def load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compound_relations):
@@ -286,20 +280,14 @@ def load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compoun
         # item[0] gene
         # item[1] compound, drug
         # item[2] Anatomy        
-        #print("Taly: compound gen anatomy :", item[0], item[1], item[2])
         for disease_id, data in anatomy_disease_compound_relations.items():
-            #print("Taly: disease_id, data:", disease_id, data)
             all_drugs_info.add(item[1])
             if item[1] in data["drugs"] and item[2] in data["locations"]:
                 old_drugs_info.add(item[1])
-
-    #print("Taly: all drug info:", len(all_drugs_info), all_drugs_info)
-    #print("Taly: old drug info:", len(old_drugs_info), old_drugs_info)
     
     new_drugs_info = all_drugs_info.difference(old_drugs_info)
-    #print("Taly: new drug info:", len(new_drugs_info), new_drugs_info)
 
-    return new_drugs_info   
+    return (new_drugs_info, old_drugs_info)
 
 ################################################################################################
 # Queries
@@ -315,9 +303,9 @@ def query_disease_info(session, disease_id):
         output_lines.append(f"Disease Name: {row.disease_name}")
 
         # Use join() for cleaner concatenation
-        output_lines.append(f"Drugs for Treatment/Palliation: {', '.join(row.drug_names)}")
-        output_lines.append(f"Genes that Cause the Disease: {', '.join(row.gene_names)}")
-        output_lines.append(f"Anatomy Locations: {', '.join(row.location_names)}")
+        output_lines.append(f"Drugs for Treatment/Palliation: {', '.join(row.drug_names) if row.drug_names else ' '}")
+        output_lines.append(f"Genes that Cause the Disease: {', '.join(row.gene_names) if row.gene_names else ' '}")
+        output_lines.append(f"Anatomy Locations: {', '.join(row.location_names) if row.location_names else ' '}")
 
     return '\n'.join(output_lines)
 
@@ -335,13 +323,13 @@ def query_all_disease_info(session):
 
 def query_all_new_compounds_info(session):
     #print(f"\n[Query] New Compounds id and name")
-    rows = session.execute("SELECT * FROM compound_info")
-    #rows = session.execute("SELECT * FROM compound_info ORDER BY compound_id ASC")
+    rows = session.execute("SELECT compound_id, compound_name FROM compound_info WHERE is_connected_with_disease = %s ALLOW FILTERING", [False])
+
     sorted_rows = sorted(rows, key=lambda row: row.compound_id)
     output_lines = ""
     for row in sorted_rows:
         output_lines += f"{row.compound_id}, Compound Name: {row.compound_name}\n"
-
+        
     return output_lines
 
 ################################################################################################
@@ -382,9 +370,9 @@ def get_result_query2():
     (disease_names, drugs_names, gene_names, location_names) = load_nodes_information(NODE_DATA_FILE)
     compound_gene_anatomy_relations = load_compound_gene_anatomy_relations(EDGE_DATA_FILE)
     anatomy_disease_compound_relations = load_anatomy_desease_compound_relations(EDGE_DATA_FILE)
-    new_drugs_info = load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compound_relations)
+    (new_drugs_info, old_drugs_info) = load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compound_relations)
 
-    insert_compounds_info(session, drugs_names, new_drugs_info)
+    insert_compounds_info(session, drugs_names, new_drugs_info, old_drugs_info)
 
     # Example query 
     output_text = query_all_new_compounds_info(session)
