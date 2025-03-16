@@ -1,5 +1,4 @@
 # Environment Setup Guide
-<pre>
 Prerequisites
     – Install Java 8 or Java 11
 Download Cassandra
@@ -11,7 +10,6 @@ Getting started
 
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
-</pre>
 
 # Detail steps for setup (Based on MacOS)
 <pre>
@@ -70,7 +68,15 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> 
 </pre>
 
-# Cassandra database for HetioNet
+# Run python script (python 3.9, tkinter 8.6)
+<pre>
+study_cassandra % python hetio_cassandra.py
+Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored under test_esults directory
+</pre>
+
+
+# Design diagram
+## Cassandra database for HetioNet
 <pre>
 1. HetioNet
 node data: nodes.tsv
@@ -143,6 +149,11 @@ Query 2:
 
 </pre>
 
-# Run python script (python 3.9, tkinter 8.6)
-study_cassandra % python hetio_cassandra.py
-
+# Potential improvement
+<pre>
+1. Since Cassandra does not support joins, we use pre-processing functions with basic Python data structures like lists and sets. 
+This could be improved by utilizing Pandas' merge function for more efficient joins.
+2. The current column family (table) structure is simple and optimized for two specific queries. 
+By storing a Pandas DataFrame after joining edge and node information, we could create a more flexible and generic table structure.
+3. We will explore alternative methods that reduce dependency on Python.
+</pre>
