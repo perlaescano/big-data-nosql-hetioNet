@@ -1,4 +1,5 @@
 # Environment Setup Guide
+<pre>
 Prerequisites
     – Install Java 8 or Java 11
 Download Cassandra
@@ -9,7 +10,8 @@ Getting started
     – http://cassandra.apache.org/doc/latest/getting_started/index.html
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
-
+<\pre>
+    
 # Detail steps for setup (Based on MacOS)
 <pre>
 1. Download, extract and move Cassandra
