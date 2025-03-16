@@ -7,7 +7,6 @@ Configuration
     – In conf/cassandra.yaml
 Getting started
     – http://cassandra.apache.org/doc/latest/getting_started/index.html
-
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
 
@@ -76,13 +75,8 @@ study_cassandra % python hetio_cassandra.py
 Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored under test_esults directory
 </pre>
 
-Initial page
 <img width="812" alt="cassandra_1" src="https://github.com/user-attachments/assets/052a97bc-fe02-4e5f-bafb-f44e348d9e8e" />
-
-Query 1 page
 <img width="812" alt="cassandra_2" src="https://github.com/user-attachments/assets/d4878dbc-840b-4efb-a744-029785941dae" />
-
-Query 2 page
 <img width="812" alt="cassandra_3" src="https://github.com/user-attachments/assets/a3827f3d-7929-46cf-9b26-0ae419b4d2ed" />
 
 # Design diagram
