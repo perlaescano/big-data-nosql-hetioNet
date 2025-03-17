@@ -21,18 +21,18 @@ The dataset includes:
 - **edges.tsv** (Relationships between entities)
 
 ## Project Deliverables
-- [ ] **Design Document** 
-  - [ ] Database design diagram
-  - [ ] List of queries
-  - [ ] Potential improvements (e.g., query optimization)
-- [ ] **Database Implementation**
-  - [ ] NoSQL database integration (at least two types)
-- [ ] **Query Functionality**
-  - [ ] Single-query implementation for disease-related retrieval
-  - [ ] Single-query implementation for new disease treatment identification
-- [ ] **Client Interface**
-  - [ ] A python CLI for database creation and query.
-- [ ] **Final Presentation**
+- **Design Document** 
+  - Database design diagram
+  -  List of queries
+  -  Potential improvements (e.g., query optimization)
+- **Database Implementation**
+  -  NoSQL database integration (at least two types)
+-  **Query Functionality**
+  -  Single-query implementation for disease-related retrieval
+  -  Single-query implementation for new disease treatment identification
+- **Client Interface**
+  -  A python CLI for database creation and query.
+-  **Final Presentation**
 
 ## Prerequisites
 - Install **Homebrew**
