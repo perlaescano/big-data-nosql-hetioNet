@@ -9,4 +9,4 @@
 .env
 
 # Mac environment files
-.DS_Store
+.DS_Store.DS_Store

@@ -8,11 +8,10 @@ Configuration
     – In conf/cassandra.yaml
 Getting started
     – http://cassandra.apache.org/doc/latest/getting_started/index.html
-
 Python Driver (DataStax Cassandra Driver)
     – https://docs.datastax.com/en/developer/python-driver/
 </pre>
-
+    
 # Detail steps for setup (Based on MacOS)
 <pre>
 1. Download, extract and move Cassandra
@@ -69,6 +68,21 @@ Type "help", "copyright", "credits" or "license" for more information.
 3.29.2
 >>> 
 </pre>
+
+# Run python script (python 3.9, tkinter 8.6)
+<pre>
+1. Run python script for GUI:
+study_cassandra % python hetio_cassandra.py
+2. Result file:
+Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored under test_results directory
+</pre>
+
+<img width="812" alt="cassandra_1" src=pictures/cassandra_1.png />
+<img width="812" alt="cassandra_2" src=pictures/cassandra_2.png />
+<img width="812" alt="cassandra_3" src=pictures/cassandra_3.png />
+
+# Design diagram
+<img width="812" alt="cassandra_4" src=pictures/cassandra_4.png />
 
 # Cassandra database for HetioNet
 <pre>
@@ -143,6 +157,12 @@ Query 2:
 
 </pre>
 
-# Run python script (python 3.9, tkinter 8.6)
-study_cassandra % python hetio_cassandra.py
-
+# Potential improvement
+<pre>
+1. Since Cassandra does not support joins, we use pre-processing functions with basic Python data structures like lists and sets. 
+This could be improved by utilizing Pandas' merge function for more efficient joins.
+See test_alternative_approach_with_pandas.py under test directory.
+2. The current column family (table) structure is simple and optimized for two specific queries. 
+By storing a Pandas DataFrame after joining edge and node information, we could create a more flexible and generic table structure.
+3. We will explore alternative methods that reduce dependency on Python.
+</pre>
