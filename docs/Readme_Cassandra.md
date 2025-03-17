@@ -74,15 +74,15 @@ Type "help", "copyright", "credits" or "license" for more information.
 1. Run python script for GUI:
 study_cassandra % python hetio_cassandra.py
 2. Result file:
-Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored under test_esults directory
+Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored under test_results directory
 </pre>
 
-<img width="812" alt="cassandra_1" src="https://github.com/user-attachments/assets/052a97bc-fe02-4e5f-bafb-f44e348d9e8e" />
-<img width="812" alt="cassandra_2" src="https://github.com/user-attachments/assets/d4878dbc-840b-4efb-a744-029785941dae" />
-<img width="812" alt="cassandra_3" src="https://github.com/user-attachments/assets/a3827f3d-7929-46cf-9b26-0ae419b4d2ed" />
+<img width="812" alt="cassandra_1" src=pictures/cassandra_1.png />
+<img width="812" alt="cassandra_2" src=pictures/cassandra_2.png />
+<img width="812" alt="cassandra_3" src=pictures/cassandra_3.png />
 
 # Design diagram
-![cassandra_4](https://github.com/user-attachments/assets/ae478bc0-e395-4f4d-9c5d-0713f323dd03)
+<img width="812" alt="cassandra_4" src=pictures/cassandra_4.png />
 
 # Cassandra database for HetioNet
 <pre>
@@ -161,6 +161,7 @@ Query 2:
 <pre>
 1. Since Cassandra does not support joins, we use pre-processing functions with basic Python data structures like lists and sets. 
 This could be improved by utilizing Pandas' merge function for more efficient joins.
+See test_alternative_approach_with_pandas.py under test directory.
 2. The current column family (table) structure is simple and optimized for two specific queries. 
 By storing a Pandas DataFrame after joining edge and node information, we could create a more flexible and generic table structure.
 3. We will explore alternative methods that reduce dependency on Python.
