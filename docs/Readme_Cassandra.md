@@ -82,7 +82,9 @@ Test result files (cassandra_query1.txt and cassandra_query2.txt) will be stored
 <img width="812" alt="cassandra_3" src="https://github.com/user-attachments/assets/a3827f3d-7929-46cf-9b26-0ae419b4d2ed" />
 
 # Design diagram
-## Cassandra database for HetioNet
+![cassandra_4](https://github.com/user-attachments/assets/ae478bc0-e395-4f4d-9c5d-0713f323dd03)
+
+# Cassandra database for HetioNet
 <pre>
 1. HetioNet
 node data: nodes.tsv
