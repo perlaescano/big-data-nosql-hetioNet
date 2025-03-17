@@ -1,10 +1,13 @@
 import subprocess
 import time
+import sys
+import os
 import csv
 from cassandra.cluster import Cluster
 from collections import defaultdict
 import tkinter as tk
 from tkinter import ttk
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 CASSANDRA_PATH = "/opt/cassandra/bin/cassandra"
 
@@ -65,7 +68,6 @@ def create_keyspace(session):
     session.set_keyspace("hetio_db")
     print("[✔] Keyspace 'hetio_db' is set successfully!")
 
-# Query 1
 def create_disease_table(session):
     """Create the disease_info table for query 1."""
 
@@ -95,7 +97,6 @@ def insert_disease_info(session, disease_names, drugs_names, gene_names, locatio
     
     print("[✔] Disease data inserted successfully!")
 
-# Query 2
 def create_compound_table(session):
     """ Create the compound_info table for query 2."""
     session.execute("""
@@ -184,7 +185,6 @@ def load_nodes_information(filename=NODE_DATA_FILE):
 
     return (disease_names, compound_names, gene_names, location_names)
 
-# Query 1
 def load_disease_relations(filename=EDGE_DATA_FILE):
     """Load edges.tsv to map diseases to drugs, genes, and locations."""
     disease_data = defaultdict(lambda: {"drugs": set(), "genes": set(), "locations": set()})
@@ -210,19 +210,24 @@ def load_disease_relations(filename=EDGE_DATA_FILE):
                     disease_data[source]["genes"].add(target)
                 elif metaedge == "DlA":  # Disease-localized-in-Anatomy
                     disease_data[source]["locations"].add(target)
-        
+
+    for disease_id, data in disease_data.items():
+        data["drugs"] = sorted(data["drugs"])
+        data["genes"] = sorted(data["genes"])
+        data["locations"] = sorted(data["locations"])
+
     return disease_data
 
-# Query 2
 def load_compound_gene_anatomy_relations(filename=EDGE_DATA_FILE):
     """Load edges.tsv to get compound gene anatomy link"""
-    Compound_CdG = defaultdict()
-    Compound_CuG = defaultdict()
-    Anatomy_AdG = defaultdict()
-    Anatomy_AuG = defaultdict()
+    Compound_CdG = defaultdict(list)
+    Compound_CuG = defaultdict(list)
+    Anatomy_AdG = defaultdict(list)
+    Anatomy_AuG = defaultdict(list)
 
     info_data = set()
 
+    # gene is key
     with open(filename, "r", encoding="utf-8") as file:
         reader = csv.reader(file, delimiter="\t")
         next(reader)  # Skip header
@@ -230,26 +235,32 @@ def load_compound_gene_anatomy_relations(filename=EDGE_DATA_FILE):
             source, metaedge, target = row
             #print(source, metaedge, target)
             if "Compound::" in source and "CdG" in metaedge and "Gene::" in target:
-                Compound_CdG[target] = source 
+                Compound_CdG[target].append(source) 
             elif "Compound::" in source and "CuG" in metaedge and "Gene::" in target:
-                Compound_CuG[target] = source
+                Compound_CuG[target].append(source)
             elif "Anatomy::" in source and "AdG" in metaedge and "Gene::" in target:
-                Anatomy_AdG[target] = source
+                Anatomy_AdG[target].append(source)
             elif "Anatomy::" in source and "AuG" in metaedge and "Gene::" in target:
-                Anatomy_AuG[target] = source
+                Anatomy_AuG[target].append(source)
 
-        for gene_id, compound_id in Compound_CdG.items():
-            anatomy_id = Anatomy_AuG.get(gene_id)
-            if anatomy_id is not None:
-                info_data.add((gene_id, compound_id, anatomy_id))
-                #print(gene_id, compound_id, anatomy_id) 
+    for gene_id, compound_id_list in Compound_CdG.items():
+        for compound_id in compound_id_list:
+            anatomy_id_list = Anatomy_AuG.get(gene_id)
+            if anatomy_id_list is not None:
+                for anatomy_id in anatomy_id_list:
+                    info_data.add((gene_id, compound_id, anatomy_id))
+                    #print(gene_id, compound_id, anatomy_id) 
+            
+    for gene_id, compound_id_list in Compound_CuG.items():
+        for compound_id in compound_id_list:
+            anatomy_id_list = Anatomy_AdG.get(gene_id)
+            if anatomy_id_list is not None:
+                for anatomy_id in anatomy_id_list:
+                    info_data.add((gene_id, compound_id, anatomy_id))
+                    #print(gene_id, compound_id, anatomy_id) 
 
-        for gene_id, compound_id in Compound_CuG.items():
-            anatomy_id = Anatomy_AdG.get(gene_id)
-            if anatomy_id is not None:
-                info_data.add((gene_id, compound_id, anatomy_id))
-                #print(gene_id, compound_id, anatomy_id) 
-    
+    #print("Path count: ", len(info_data))
+
     return info_data
 
 def load_anatomy_desease_compound_relations(filename=EDGE_DATA_FILE):
@@ -269,8 +280,12 @@ def load_anatomy_desease_compound_relations(filename=EDGE_DATA_FILE):
             if "Compound::" in source:
                 if metaedge == "CtD" or metaedge == "CpD":  
                     disease_data[target]["drugs"].add(source)
+            
+            if "Gene::" in target:
+                if metaedge == "DuG" or metaedge == "DaG" or metaedge == "DdG":
+                    disease_data[source]["genes"].add(target)
         
-    return disease_data
+    return disease_data    
 
 def load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compound_relations):
     """Insert collected data into Cassandra"""
@@ -282,7 +297,7 @@ def load_new_drugs_info(compound_gene_anatomy_relations, anatomy_disease_compoun
         # item[2] Anatomy        
         for disease_id, data in anatomy_disease_compound_relations.items():
             all_drugs_info.add(item[1])
-            if item[1] in data["drugs"] and item[2] in data["locations"]:
+            if item[1] in data["drugs"]:
                 old_drugs_info.add(item[1])
     
     new_drugs_info = all_drugs_info.difference(old_drugs_info)
@@ -296,10 +311,9 @@ def query_disease_info(session, disease_id):
     """Query disease information."""
     rows = session.execute("SELECT * FROM disease_info WHERE disease_id = %s", [disease_id])
 
-    # Disease::DOID:263
-    # Disease::DOID:0050742
     output_lines = []
     for row in rows:
+        output_lines.append(f"Disease ID: {row.disease_id}")
         output_lines.append(f"Disease Name: {row.disease_name}")
 
         # Use join() for cleaner concatenation
@@ -311,18 +325,13 @@ def query_disease_info(session, disease_id):
 
 def query_all_disease_info(session):
     """Query all disease information."""
-    #print(f"\n[Query] Disease id and name")
     rows = session.execute("SELECT * FROM disease_info")
     output_lines = ""
     for row in rows:
-        """
-        print(f"{row.disease_id}, Disease Name: {row.disease_name}, Drugs: {row.drug_names}")
-        """
         output_lines += f"{row.disease_id}, Disease Name: {row.disease_name}, Drugs: {row.drug_names}\n"
     return rows
 
 def query_all_new_compounds_info(session):
-    #print(f"\n[Query] New Compounds id and name")
     rows = session.execute("SELECT compound_id, compound_name FROM compound_info WHERE is_connected_with_disease = %s ALLOW FILTERING", [False])
 
     sorted_rows = sorted(rows, key=lambda row: row.compound_id)
@@ -333,10 +342,25 @@ def query_all_new_compounds_info(session):
     return output_lines
 
 ################################################################################################
+# Save result to file
+################################################################################################
+def save_results_to_file(filename, content):
+    """Saves query results to a file in the 'test_results' folder."""
+    folder_path = "../test_results"
+    os.makedirs(folder_path, exist_ok=True)  
+    file_path = os.path.join(folder_path, filename)
+
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write(content)
+
+    print(f"[✔] Query results saved to {file_path}")
+
+################################################################################################
 # Connection with GUI
 ################################################################################################
 def get_result_query1(disease_id):
-    #print("run_query1 is called")
+    print("[✔] Query 1 is called.")
+
     if not is_cassandra_running():
         start_cassandra()
     session = connect_to_cassandra()
@@ -349,17 +373,18 @@ def get_result_query1(disease_id):
 
     insert_disease_info(session, disease_names, drugs_names, gene_names, location_names, disease_relations)
 
-    # Example query for a specific disease
+    # Query execute for a specific disease
+    # Disease::DOID:263
+    # Disease::DOID:0050742
     output_text = query_disease_info(session, disease_id)
-    #query_disease_info(session, "Disease::DOID:0050742")
 
-    #query_all_disease_info(session)
+    # Save results to file
+    save_results_to_file("cassandra_query1.txt", output_text)
 
     return output_text
 
 def get_result_query2():
-    #print("run_query2 is called")
-    
+    print("[✔] Query 2 is called.")
     if not is_cassandra_running():
         start_cassandra()
     session = connect_to_cassandra()
@@ -374,8 +399,11 @@ def get_result_query2():
 
     insert_compounds_info(session, drugs_names, new_drugs_info, old_drugs_info)
 
-    # Example query 
+    # Query execute
     output_text = query_all_new_compounds_info(session)
+
+    # Save results to file
+    save_results_to_file("cassandra_query2.txt", output_text)
 
     return output_text
 
@@ -472,9 +500,8 @@ class Query1Page(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
 
     def get_query_result(self):
-        #print("Result of Query 1")
         user_text = self.entry.get()  # Get the text entered by the user
-        
+        output_text = ""
         if "Disease::" in user_text:  
             output_text = get_result_query1(user_text)
         else:
@@ -516,7 +543,6 @@ class Query2Page(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
 
     def get_query_result(self):
-        #print("Result of Query 2")
         output_text = get_result_query2()       
 
         # Enable text widget to insert new content
